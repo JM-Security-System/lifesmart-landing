@@ -1,0 +1,72 @@
+/**
+ * JM × LifeSmart · Construmedia 2026 — receptor de solicitudes de la landing.
+ * v06: cada solicitud de la calculadora se guarda en la hoja "Leads" y JM recibe un aviso por correo.
+ * El cliente no recibe correo: la landing le abre WhatsApp con su cotización.
+ *
+ * Instalación: ver LEEME.md (5 minutos, sin servidor ni costo).
+ */
+
+const SHEET_NAME = "Leads";
+const CORREO_JM = "info@jmsecuritysystem.com";   // destino de todas las solicitudes
+const COLUMNAS = ["folio", "fecha", "nombre", "whatsapp", "correo", "perfil",
+  "tipo", "m2", "unidades", "niveles", "soluciones", "kit", "rango", "origen"];
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const q = JSON.parse(e.postData.contents);
+    obtenerHoja_().appendRow(COLUMNAS.map(c => c === "fecha" ? new Date(q.fecha || Date.now()) : q[c] !== undefined ? q[c] : ""));
+    enviarAJm_(q);
+    return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: String(err) })).setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* Ejecutar una vez desde el editor (botón ▶ con «probar» elegido): pide los permisos,
+   agrega una fila de prueba y envía el aviso a CORREO_JM. Luego se puede borrar esa fila. */
+function probar() {
+  const r = doPost({ postData: { contents: JSON.stringify({
+    folio: "PRUEBA", fecha: new Date().toISOString(), nombre: "Prueba de instalación", whatsapp: "809 475 2210",
+    correo: "", perfil: "Propietario", tipo: "Apartamento", m2: 120, unidades: 1, niveles: 1,
+    soluciones: "Control, Iluminación", kit: "Comfort", rango: "US$ 1,040–1,320", origen: "prueba" }) } });
+  Logger.log(r.getContent());
+}
+
+function obtenerHoja_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let hoja = ss.getSheetByName(SHEET_NAME);
+  if (!hoja) {
+    hoja = ss.insertSheet(SHEET_NAME);
+    hoja.appendRow(COLUMNAS);
+    hoja.setFrozenRows(1);
+  }
+  return hoja;
+}
+
+/* Correo a JM con toda la solicitud; "Responder" va directo al cliente */
+function enviarAJm_(q) {
+  let wa = String(q.whatsapp || "").replace(/[^\d]/g, "");
+  if (wa.length === 10 && /^8[024]9/.test(wa)) wa = "1" + wa;   // número dominicano sin código de país
+  const fila = (k, v) => `<tr><td style="padding:6px 12px 6px 0;color:#666;white-space:nowrap;vertical-align:top">${k}</td><td style="padding:6px 0">${v || "—"}</td></tr>`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;color:#111">
+      <p style="font-size:12px;letter-spacing:.1em;color:#b85a17">NUEVA SOLICITUD · LANDING CONSTRUMEDIA · FOLIO ${q.folio}</p>
+      <h2 style="margin:0 0 12px">${q.nombre}</h2>
+      <table style="border-collapse:collapse;width:100%;font-size:14px">
+        ${fila("Perfil", q.perfil)}
+        ${fila("WhatsApp", wa ? `<a href="https://wa.me/${wa}">${q.whatsapp}</a>` : q.whatsapp)}
+        ${fila("Correo", q.correo ? `<a href="mailto:${q.correo}">${q.correo}</a>` : "")}
+        ${fila("Proyecto", q.tipo === "Torre" ? `Torre · ${q.unidades} apartamentos de ${q.m2} m²` : `${q.tipo} · ${q.m2} m² · ${q.niveles} nivel(es)`)}
+        ${fila("Soluciones", q.soluciones)}
+        ${fila("Kit sugerido", q.kit)}
+        ${fila("Estimación", `<b>${q.rango}</b>`)}
+        ${fila("Origen", q.origen)}
+        ${fila("Fecha", new Date(q.fecha).toLocaleString("es-DO"))}
+      </table>
+    </div>`;
+  MailApp.sendEmail({ to: CORREO_JM, replyTo: q.correo || CORREO_JM, subject: `Nueva solicitud ${q.folio} · ${q.nombre} · ${q.tipo} · Kit ${q.kit}`, htmlBody: html });
+}

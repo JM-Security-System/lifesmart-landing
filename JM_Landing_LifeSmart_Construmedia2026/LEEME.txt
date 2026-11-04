@@ -1,0 +1,38 @@
+LANDING LIFESMART × JM SECURITY SYSTEM · CONSTRUMEDIA 2026
+Versión final (v09) · 4 de noviembre de 2026 · kits desplegables + enlace a la web de JM
+
+CONTENIDO
+  sitio/   → la página web. Es lo único que se sube al servidor.
+  LEADS/   → guía y código para que las solicitudes de cotización lleguen a una hoja de Excel de JM.
+
+1. SUBIR LA PÁGINA
+  - Sube TODO el contenido de la carpeta «sitio» (no la carpeta en sí) a la carpeta del servidor
+    donde vivirá la página: la raíz del dominio (p. ej. public_html/) o una subcarpeta
+    (p. ej. public_html/lifesmart/). Todas las rutas son relativas: funciona en cualquiera de las dos.
+  - Conserva la estructura: index.html, robots.txt, favicon.svg, apple-touch-icon.png y las carpetas
+    css/, js/ y Assets/.
+  - No necesita base de datos, PHP ni instalación: son archivos estáticos (HTML, CSS, JS, imágenes y video).
+  - Peso total: unos 8,5 MB. Requiere HTTPS (cualquier hosting actual lo incluye).
+
+2. AJUSTAR LA DIRECCIÓN FINAL (2 líneas, en index.html)
+  Para que la vista previa al compartir el enlace (WhatsApp, Facebook, LinkedIn) muestre la imagen correcta,
+  cambia https://disenogus.github.io/jm-lifesmart-landing/ por la dirección final de la página en:
+    <meta property="og:url"   content="https://disenogus.github.io/jm-lifesmart-landing/">
+    <meta property="og:image" content="https://disenogus.github.io/jm-lifesmart-landing/Assets/og.jpg">
+  Ejemplo: https://jmsecuritysystem.com/lifesmart/  y  https://jmsecuritysystem.com/lifesmart/Assets/og.jpg
+
+3. CONECTAR LAS SOLICITUDES A LA HOJA DE EXCEL (obligatorio antes de la feria)
+  Hoy la calculadora abre WhatsApp con la cotización, pero todavía no guarda las solicitudes.
+  - Sigue LEADS/Guia_JM_conectar_leads.pdf con la cuenta de Google de JM (10 minutos).
+  - Al final obtendrás una URL que empieza por https://script.google.com/macros/s/ y termina en /exec.
+  - Pégala en sitio/js/landing_v08.js, línea 16, entre las comillas:
+        leadsEndpoint: "https://script.google.com/macros/s/…/exec",
+    (o envíala a Gustavo y él lo deja listo).
+  - Prueba: pide una cotización en la página ya publicada y revisa que aparezca la fila en la hoja.
+
+4. OPCIONAL
+  - Google Analytics 4: pega el ID (G-XXXXXXX) en js/landing_v08.js, línea 18 (ga4: "").
+  - Instagram de LifeSmart en el pie de página: usuario sin @ en la línea 19 (igLifeSmart: "").
+
+CONTACTO EN LA PÁGINA
+  WhatsApp (809) 475-2210 · info@jmsecuritysystem.com · Instagram @jmsecuritysystem
